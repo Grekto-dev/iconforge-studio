@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IconForge Studio — Linux Icon Pack Creator &amp; Editor</title>
+  <link rel="icon" type="image/svg+xml" href="/static/iconforge.svg" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <!-- TOP HEADER: Brand (Left) | System Status & Apply (Center) | Language Selector (Right) -->
+  <header class="app-header">
+    <div class="brand-area">
+      <div class="brand-logo" style="background: transparent; box-shadow: none;">
+        <img src="/static/iconforge.svg" width="40" height="40" alt="IconForge" />
+      </div>
+      <div>
+        <div class="brand-title">IconForge <span class="brand-badge">Studio</span></div>
+        <div class="brand-subtitle" data-i18n="brandSubtitle">Linux Icon Pack Creator &amp; Editor • OpenDesktop.org</div>
+      </div>
+    </div>
+
+    <!-- CENTER: Active System Theme & Apply Button -->
+    <div class="system-status-area header-center">
+      <div class="active-theme-pill" id="systemActiveThemePill">
+        <span class="status-dot"></span>
+        <span><span data-i18n="activeOnSystem">Active on System:</span> <strong id="currentSystemThemeName">...</strong></span>
+      </div>
+      <button class="btn btn-primary btn-glow" id="btnApplyToSystem" data-i18n-title="applySystemTooltip">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
+        <span data-i18n="applyToSystem">Apply to System</span>
+      </button>
+    </div>
+
+    <!-- RIGHT: Persistent Language Selector -->
+    <div class="header-right">
+      <div class="lang-selector-wrap">
+        <span class="lang-icon">🌐</span>
+        <select id="langSelect" class="input-select lang-select" title="Language / Idioma">
+          <option value="en">English</option>
+          <option value="pt-BR">Português (BR)</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <!-- ACTIVE PICKED ICON FLOATING BAR (For Click-to-Assign alternative to Drag & Drop) -->
+  <div class="picked-banner hidden" id="pickedBanner">
+    <img id="pickedBannerImg" src="" alt="" />
+    <div class="picked-banner-text">
+      <strong data-i18n="pickedIconLabel">Icon copied to cursor:</strong> <span id="pickedBannerName"></span>
+      <small data-i18n="pickedIconHint">Click any icon card on the left to replace it, or drop into the pack!</small>
+    </div>
+    <button class="btn btn-ghost btn-sm" id="btnCancelPicked" data-i18n="cancelEsc">Cancel (Esc)</button>
+  </div>
+
+  <!-- MAIN SPLIT WORKSPACE -->
+  <main class="studio-workspace">
+    <!-- ==================== LEFT PANE: TARGET PACK EDITOR ==================== -->
+    <section class="pane pane-left">
+      <div class="pane-toolbar">
+        <div class="pack-selector-row">
+          <div class="field-group flex-1">
+            <label class="field-label" data-i18n="editingPackLabel">EDITING PACK (YOUR PACK)</label>
+            <div class="select-with-actions">
+              <select id="targetPackSelect" class="input-select"></select>
+              <button class="btn btn-secondary" id="btnNewPackModal" data-i18n="btnNewPack">
+                + New Pack
+              </button>
+              <button class="btn btn-ghost" id="btnPackSettingsModal" title="Pack Settings / Delete">
+                ⚙️
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- PACK NAME BAR (Pre-filled when selecting a pack) -->
+        <div class="pack-name-bar">
+          <label class="pack-name-inline-label" data-i18n="packNameLabel">Pack Name:</label>
+          <input type="text" id="targetPackNameInput" class="input-text pack-name-input" placeholder="Pack name..." />
+          <button class="btn btn-secondary btn-sm" id="btnSavePackName" data-i18n="btnSaveName">💾 Save Name</button>
+        </div>
+
+        <div class="pack-info-banner" id="targetPackBanner">
+          <span id="targetPackStatusText">Loading pack...</span>
+          <span class="banner-hint" data-i18n="leftBannerHint">💡 Drag icons from the right (or PC files) onto any icon below</span>
+        </div>
+
+        <!-- LEFT PACK CATEGORY TABS -->
+        <div class="tabs-bar" id="leftGroupTabs">
+          <button class="tab-btn active" data-group="all" data-i18n="tabAllPackIcons">📦 All Pack Icons</button>
+          <button class="tab-btn" data-group="places" data-i18n="tabPlaces">📁 Folders &amp; Places</button>
+          <button class="tab-btn" data-group="apps" data-i18n="tabApps">🚀 Applications</button>
+          <button class="tab-btn" data-group="devices" data-i18n="tabDevices">💻 Devices &amp; Drives</button>
+          <button class="tab-btn" data-group="mimes" data-i18n="tabMimes">📄 File Types</button>
+          <button class="tab-btn" data-group="status" data-i18n="tabStatus">🔔 Status</button>
+          <button class="tab-btn" data-group="essential" data-i18n="tabEssential">📌 Essential Slots</button>
+          <button class="tab-btn" id="btnAddCustomSlot" data-group="add_custom" data-i18n="tabAddIcon">+ Add Icon</button>
+        </div>
+
+        <!-- FILTER BAR -->
+        <div class="filter-row">
+          <div class="search-box flex-1">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="leftSlotSearch" data-i18n-placeholder="leftSearchPlaceholder" placeholder="Search icons in this pack (e.g. chrome, folder, terminal...)" />
+          </div>
+        </div>
+      </div>
+
+      <!-- TARGET PACK ICONS GRID -->
+      <div class="pane-scroll" id="targetSlotsContainer">
+        <div class="source-icons-meta" id="leftIconsMeta"></div>
+        <div class="slots-grid" id="targetSlotsGrid"></div>
+        <div class="load-more-wrap hidden" id="loadMoreLeftWrap">
+          <button class="btn btn-secondary" id="btnLoadMoreLeft" data-i18n="btnLoadMore">Load more icons...</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== RIGHT PANE: SOURCE PACKS & OPENDESKTOP STORE ==================== -->
+    <section class="pane pane-right">
+      <div class="pane-toolbar">
+        <div class="right-mode-tabs">
+          <button class="mode-tab active" data-mode="browse">
+            <span data-i18n="modeBrowsePacks">🎨 Browse Packs</span> <span class="mode-badge" id="totalPacksBadge">0</span>
+          </button>
+          <button class="mode-tab" data-mode="store">
+            <span data-i18n="modeStore">🌐 Downloads (OpenDesktop.org)</span>
+          </button>
+          <button class="mode-tab" data-mode="imports">
+            <span data-i18n="modeImports">🖼️ Custom Icons</span> <span class="mode-badge" id="totalImportsBadge">0</span>
+          </button>
+        </div>
+
+        <!-- SUB-TOOLBAR FOR MODE 1: BROWSE LOCAL & DOWNLOADED PACKS -->
+        <div class="source-controls" id="sourceBrowseControls">
+          <div class="source-pack-row">
+            <div class="field-group flex-1">
+              <label class="field-label" data-i18n="sourcePackLabel">SOURCE PACK TO DRAG FROM</label>
+              <div class="select-with-actions">
+                <select id="sourcePackSelect" class="input-select"></select>
+                <button class="btn btn-danger-ghost hidden" id="btnDeleteDownloadedSource" data-i18n="btnDeleteDownload">
+                  🗑️ Delete Download
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- QUICK BULK MIX BAR -->
+          <div class="quick-mix-bar">
+            <span class="quick-mix-label" data-i18n="quickMixLabel">Quick Mix from this pack:</span>
+            <button class="btn btn-chip" id="btnBulkCopyPlaces" data-i18n="btnCopyAllFolders">
+              📁 Copy All Folders
+            </button>
+            <button class="btn btn-chip" id="btnBulkCopyTaskbar" data-i18n="btnCopyTaskbar">
+              📌 Copy Taskbar Apps
+            </button>
+            <button class="btn btn-chip" id="btnBulkCopySystem" data-i18n="btnCopySystem">
+              💻 Copy System Icons
+            </button>
+          </div>
+
+          <div class="filter-row">
+            <div class="cat-pills" id="sourceCatPills">
+              <button class="pill-btn active" data-cat="all" data-i18n="catAll">All</button>
+              <button class="pill-btn" data-cat="places" data-i18n="catFolders">Folders</button>
+              <button class="pill-btn" data-cat="apps" data-i18n="catApps">Apps</button>
+              <button class="pill-btn" data-cat="devices" data-i18n="catDevices">Drives</button>
+              <button class="pill-btn" data-cat="mimes" data-i18n="catMimes">Files</button>
+              <button class="pill-btn" data-cat="status" data-i18n="catStatus">Status</button>
+            </div>
+            <div class="search-box flex-1">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input type="text" id="sourceIconSearch" data-i18n-placeholder="sourceSearchPlaceholder" placeholder="Search icon in source pack (e.g. chrome, folder, code)..." />
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-TOOLBAR FOR MODE 2: OPENDESKTOP STORE -->
+        <div class="source-controls hidden" id="sourceStoreControls">
+          <div class="filter-row">
+            <div class="search-box flex-1">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input type="text" id="storeSearchInput" data-i18n-placeholder="storeSearchPlaceholder" placeholder="Search on OpenDesktop.org (e.g. Win11, Fluent, WhiteSur, Tela, Colloid)..." />
+            </div>
+            <select id="storeSortSelect" class="input-select store-sort">
+              <option value="down" data-i18n="sortMostDownloaded">🔥 Most Downloaded</option>
+              <option value="high" data-i18n="sortHighestRated">⭐ Highest Rated</option>
+              <option value="new" data-i18n="sortNewest">🆕 Newest</option>
+            </select>
+            <button class="btn btn-secondary" id="btnStoreSearch" data-i18n="btnSearch">Search</button>
+          </div>
+          <div class="store-quick-tags">
+            <span data-i18n="suggestionsLabel">Suggestions:</span>
+            <button class="tag-chip" data-query="Win11">Win11</button>
+            <button class="tag-chip" data-query="Fluent">Fluent</button>
+            <button class="tag-chip" data-query="Windows 11">Windows 11</button>
+            <button class="tag-chip" data-query="Tela">Tela</button>
+            <button class="tag-chip" data-query="WhiteSur">WhiteSur</button>
+            <button class="tag-chip" data-query="Colloid">Colloid</button>
+            <button class="tag-chip" data-query="Kora">Kora</button>
+            <button class="tag-chip" data-query="Candy">Candy</button>
+            <button class="tag-chip" data-query="" data-i18n="topOverall">Top Overall</button>
+          </div>
+          <!-- Active download jobs status area -->
+          <div id="storeDownloadJobsArea" class="download-jobs-area"></div>
+        </div>
+
+        <!-- SUB-TOOLBAR FOR MODE 3: CUSTOM IMPORTS -->
+        <div class="source-controls hidden" id="sourceImportsControls">
+          <div class="upload-dropzone" id="customUploadDropzone">
+            <input type="file" id="customFileInput" accept=".svg,.png,.ico,.webp" multiple class="hidden" />
+            <div class="upload-dropzone-content">
+              <span class="upload-icon">📥</span>
+              <div>
+                <strong data-i18n="dropzoneTitle">Drop .SVG, .PNG, .ICO or .WEBP files here</strong>
+                <p data-i18n="dropzoneDesc">Or click to browse from your computer. Then drag onto any icon on the left!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT PANE SCROLL CONTENT -->
+      <div class="pane-scroll" id="rightPaneScroll">
+        <!-- View 1: Source Icons Grid -->
+        <div id="viewBrowseIcons">
+          <div class="source-icons-meta" id="sourceIconsMeta"></div>
+          <div class="source-icons-grid" id="sourceIconsGrid"></div>
+          <div class="load-more-wrap hidden" id="loadMoreSourceWrap">
+            <button class="btn btn-secondary" id="btnLoadMoreSource" data-i18n="btnLoadMore">Load more icons...</button>
+          </div>
+        </div>
+
+        <!-- View 2: OpenDesktop Store Grid -->
+        <div id="viewStoreItems" class="hidden">
+          <div class="store-grid" id="storeItemsGrid"></div>
+          <div class="store-pagination" id="storePagination">
+            <button class="btn btn-secondary" id="btnStorePrevPage" disabled data-i18n="btnPrev">← Previous</button>
+            <span id="storePageIndicator">Page 1</span>
+            <button class="btn btn-secondary" id="btnStoreNextPage" data-i18n="btnNext">Next →</button>
+          </div>
+        </div>
+
+        <!-- View 3: Imported Custom Icons Grid -->
+        <div id="viewImportedIcons" class="hidden">
+          <div class="source-icons-grid" id="importedIconsGrid"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================== MODAL 1: COMPARE ACROSS ALL PACKS ==================== -->
+  <div class="modal-backdrop hidden" id="compareModal">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div>
+          <h3 id="compareModalTitle">🪄 Compare Icon Across All Packs</h3>
+          <p class="modal-subtitle" id="compareModalSubtitle" data-i18n="compareSubtitle">Click any version below to immediately apply it to your pack</p>
+        </div>
+        <button class="btn-close" id="btnCloseCompareModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="compare-grid" id="compareVariantsGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2: CREATE NEW PACK ==================== -->
+  <div class="modal-backdrop hidden" id="newPackModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3 data-i18n="newPackModalTitle">✨ Create New Icon Pack</h3>
+          <p class="modal-subtitle" data-i18n="newPackModalSub">Build your own custom pack by mixing icons from any source</p>
+        </div>
+        <button class="btn-close" id="btnCloseNewPackModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-field">
+          <label data-i18n="packNameField">Pack Name</label>
+          <input type="text" id="newPackNameInput" class="input-text" placeholder="e.g. MyWin11Fluent" value="MyWin11Fluent" />
+        </div>
+        <div class="form-field">
+          <label data-i18n="baseThemeField">Base Theme (Fallback for unedited icons)</label>
+          <select id="newPackBaseSelect" class="input-select"></select>
+          <small class="field-help" data-i18n="baseThemeHelp">
+            The fallback theme ensures small system tray icons (like Wi-Fi, battery, arrows) keep working while you customize folders and apps!
+          </small>
+        </div>
+        <div class="form-field checkbox-field">
+          <input type="checkbox" id="newPackCloneCheckbox" />
+          <label for="newPackCloneCheckbox" data-i18n="cloneFullCheckbox">Physically copy all files from the Base Theme into this pack (Full Clone)</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="btnCancelNewPack" data-i18n="btnCancel">Cancel</button>
+        <button class="btn btn-primary" id="btnConfirmCreatePack" data-i18n="btnCreatePackNow">Create Pack Now</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 3: PACK SETTINGS ==================== -->
+  <div class="modal-backdrop hidden" id="packSettingsModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3 data-i18n="packSettingsTitle">⚙️ Pack Settings</h3>
+          <p class="modal-subtitle" id="settingsPackIdSubtitle"></p>
+        </div>
+        <button class="btn-close" id="btnClosePackSettingsModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-field">
+          <label data-i18n="displayNameLabel">Display Name</label>
+          <input type="text" id="settingsPackNameInput" class="input-text" />
+        </div>
+        <div class="form-field">
+          <label data-i18n="inheritedThemesLabel">Inherited Themes (comma-separated fallbacks)</label>
+          <input type="text" id="settingsPackInheritsInput" class="input-text" placeholder="e.g. Win11-dark,Fluent-dark,hicolor" />
+        </div>
+      </div>
+      <div class="modal-footer space-between">
+        <button class="btn btn-danger" id="btnDeleteCurrentPack" data-i18n="btnDeletePack">🗑️ Delete this Pack</button>
+        <div class="footer-right-btns">
+          <button class="btn btn-ghost" id="btnCancelPackSettings" data-i18n="btnCancel">Cancel</button>
+          <button class="btn btn-primary" id="btnSavePackSettings" data-i18n="btnSaveSettings">Save Settings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 4: ADD CUSTOM SLOT ==================== -->
+  <div class="modal-backdrop hidden" id="addSlotModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3 data-i18n="addSlotTitle">➕ Add Custom Icon Slot</h3>
+          <p class="modal-subtitle" data-i18n="addSlotSub">Enter the technical icon name (e.g. spotify-client, vlc, folder-vbox)</p>
+        </div>
+        <button class="btn-close" id="btnCloseAddSlotModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-field">
+          <label data-i18n="friendlyNameLabel">Friendly Label</label>
+          <input type="text" id="customSlotLabelInput" class="input-text" placeholder="e.g. Spotify" />
+        </div>
+        <div class="form-field">
+          <label data-i18n="techIconIdLabel">Technical Icon ID</label>
+          <input type="text" id="customSlotIdInput" class="input-text" placeholder="e.g. spotify-client" />
+        </div>
+        <div class="form-field">
+          <label data-i18n="categoryLabel">Category</label>
+          <select id="customSlotCategorySelect" class="input-select">
+            <option value="apps">Applications (apps)</option>
+            <option value="places">Folders &amp; Places (places)</option>
+            <option value="devices">Devices (devices)</option>
+            <option value="mimes">File Types (mimes)</option>
+            <option value="status">Status / Tray (status)</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="btnCancelAddSlot" data-i18n="btnCancel">Cancel</button>
+        <button class="btn btn-primary" id="btnConfirmAddSlot" data-i18n="btnAddSlotConfirm">Add Slot</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
