@@ -315,7 +315,7 @@ def run_gtk_webkit_window(url):
     if settings:
         settings.set_property("gtk-application-prefer-dark-theme", True)
 
-    win = Gtk.Window(title="IconForge Studio — Linux Icon Pack Creator & Editor")
+    win = Gtk.Window(title="IconForge Studio — Linux Icon Pack Creator and Editor")
     win.set_default_size(1420, 880)
     win.set_position(Gtk.WindowPosition.CENTER)
     win.set_wmclass("iconforge", "IconForge")
